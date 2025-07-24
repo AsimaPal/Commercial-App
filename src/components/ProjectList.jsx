@@ -163,6 +163,8 @@ function ProjectList({
       : 0;
 
   const handleEditProject = (project) => {
+    console.log("Edit button clicked for project:", project); // <--- ADDED LOG HERE
+
     setEditingProject(project);
     setCurrentView("form");
   };
