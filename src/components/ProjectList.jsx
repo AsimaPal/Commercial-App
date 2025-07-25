@@ -467,12 +467,12 @@ function ProjectList({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
-                        <button
+                        {/* <button
                           onClick={() => getLLMProjectInsights(project)}
                           className="px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors duration-200 text-xs shadow-sm"
                         >
                           Insights
-                        </button>
+                        </button> */}
                         <button
                           onClick={() => handleEditProject(project)}
                           className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 text-xs shadow-sm"
