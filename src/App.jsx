@@ -14,35 +14,17 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ProjectForm from './components/ProjectForm';
 import ProjectList from './components/ProjectList';
 
-// Global variables for Firebase config and app ID (provided by the Canvas environment)
-// IMPORTANT: Replace these with your actual Firebase project details for deployment
-// Your actual Firebase configuration from the Firebase Console
-// const firebaseConfig = {
-//   apiKey: "AIzaSyDWuYvWTAP5N3oe92Lxy1IXNxv0y1b24nQ",
-//   authDomain: "commercial-application-9c712.firebaseapp.com",
-//   projectId: "commercial-application-9c712",
-//   storageBucket: "commercial-application-9c712.firebasestorage.app",
-//   messagingSenderId: "297572579265",
-//   appId: "1:297572579265:web:0c2da20f08d965e7fb2140",
-//   measurementId: "G-SNP5Z3LKH2"
-// };
-// Global variables for Firebase config and app ID (provided by the Canvas environment)
-// IMPORTANT: For local VS Code development, you will replace these with your actual Firebase project details.
-// You need to REPLACE these three lines:
-// const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // This will be your Firebase Project ID
-// const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-// const firebaseConfig = rawFirebaseConfig || {}; // Your actual Firebase config object goes here for deployment
 
-// WITH these lines, using your actual config:
 const firebaseConfig = {
-  apiKey: "AIzaSyC2aSLBrGJaFMA0RB__s_e3BFZvsJZ6R_U",
-  authDomain: "dts-commercial-tracker.firebaseapp.com",
-  projectId: "dts-commercial-tracker", // THIS IS YOUR FIREBASE PROJECT ID
-  storageBucket: "dts-commercial-tracker.firebasestorage.app",
-  messagingSenderId: "488145931209",
-  appId: "1:488145931209:web:4675d664fb968e30f5f618", // This is your Web App's specific ID
-  measurementId: "G-ZEEL4P82N1"
+  apiKey: "AIzaSyAMFRS1RdyobDHTzhBspI4Yj7PJA3t7XGI",
+  authDomain: "project-revenue-tracker.firebaseapp.com",
+  projectId: "project-revenue-tracker",
+  storageBucket: "project-revenue-tracker.firebasestorage.app",
+  messagingSenderId: "114129544736",
+  appId: "1:114129544736:web:c0eb5bbc91ba495d95be45",
+  measurementId: "G-2KFPZFT1D9"
 };
+
 
 // This line is CRUCIAL for Firestore pathing. It ensures 'appId' uses your project ID.
 const appId = firebaseConfig.projectId; // <-- This will set appId to "dts-commercial-tracker"
@@ -212,7 +194,7 @@ Monthly Data (YYYY-MM, Revenue, Cost, Resources, RPE, CPE, GM%):
         <div className="min-h-screen bg-[#F0F8FF] font-sans text-gray-800 p-4 sm:p-6 md:p-8">
             <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-10 border border-gray-100 relative">
                 <AppHeader />
-                <p className="text-gray-600 text-lg text-center mb-8">Streamline your project financials and team management.</p>
+                {/* <p className="text-gray-600 text-lg text-center mb-8">Streamline your project financials and team management.</p> */}
                 <AppNavigation
                     currentView={currentView}
                     setCurrentView={setCurrentView}

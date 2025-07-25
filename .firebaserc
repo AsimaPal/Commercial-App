@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "dts-commercial-tracker",
+    "prod": "dts-commercial-tracker"
+  },
+  "targets": {},
+  "etags": {}
+}

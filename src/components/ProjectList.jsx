@@ -23,38 +23,35 @@ function ProjectList({
   const [consolidatedEndMonth, setConsolidatedEndMonth] = useState("");
 
   useEffect(() => {
-    if (!db || !userId) return;
-    console.log("Skipping project fetch: DB, userId, or appId not ready.", {
-      db,
-      userId,
-      appId,
-    });
+    // We only need 'db' and 'appId' to be ready for fetching from the common collection.
+    // 'userId' is used later for permission checks in rendering.
+    if (!db || !appId) {
+      // Removed userId from this check as it's not part of the read path
+      console.log("Skipping project fetch: DB or App ID not ready.");
+      return;
+    }
 
     setLoading(true);
     setError("");
-    console.log(
-      "Attempting to fetch projects for path:",
-      `artifacts/${appId}/users/${userId}/projects`
-    );
 
-    const projectsCollectionRef = collection(
-      db,
-      `artifacts/${appId}/users/${userId}/projects`
-    );
+    // Query the common 'projects' collection: artifacts/{appId}/projects
+    const projectsCollectionRef = collection(db, `artifacts/${appId}/projects`); // <-- UPDATED PATH
+
     const unsubscribe = onSnapshot(
       projectsCollectionRef,
       (snapshot) => {
         console.log(
-          "onSnapshot fired. Docs changed:",
+          "onSnapshot fired for common projects collection. Docs changed:",
           snapshot.docChanges().length
         );
-
         const projectsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        console.log("Raw projects data from snapshot:", projectsData);
-
+        console.log(
+          "Raw projects data from common collection snapshot:",
+          projectsData
+        );
         setProjects(projectsData);
         setLoading(false);
         console.log(
@@ -63,14 +60,16 @@ function ProjectList({
         );
       },
       (err) => {
-        console.error("Error fetching projects:", err);
-        setError("Failed to load projects. Please try again.");
+        console.error("Error fetching projects from common collection:", err);
+        setError(
+          "Failed to load projects. Please try again. Check Firestore rules."
+        );
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
-  }, [db, userId, appId]);
+    return () => unsubscribe(); // Cleanup listener
+  }, [db, appId]);
 
   // Log the raw projects state before filtering
   console.log("Projects state (raw):", projects);
@@ -169,20 +168,26 @@ function ProjectList({
     setCurrentView("form");
   };
 
-  const handleDeleteProject = async (projectId) => {
+  // Inside src/components/ProjectList.jsx
+  const handleDeleteProject = async (projectToDelete) => {
+    // Changed parameter to full project object
     showConfirmationModal(
-      "Are you sure you want to delete this project? This action cannot be undone.",
+      `Are you sure you want to delete project "${projectToDelete.projectName}"? This action cannot be undone.`,
       async () => {
         try {
+          // Target the common projects collection
           const projectDocRef = doc(
             db,
-            `artifacts/${appId}/users/${userId}/projects`,
-            projectId
+            `artifacts/${appId}/projects`, // <-- UPDATED COMMON PATH
+            projectToDelete.id
           );
           await deleteDoc(projectDocRef);
+          console.log(`Project ${projectToDelete.id} deleted successfully.`);
         } catch (error) {
           console.error("Error deleting project:", error);
-          setError(`Failed to delete project: ${error.message}`);
+          setError(
+            `Failed to delete project: ${error.message}. Ensure you have permissions.`
+          );
         }
       }
     );
@@ -367,7 +372,7 @@ function ProjectList({
         </div>
       </div>
 
-      {filteredProjects.length === 0 ? (
+       {filteredProjects.length === 0 ? (
         <div className="p-8 text-center text-gray-600 bg-white rounded-xl shadow-md border border-gray-100">
           <p className="text-xl font-medium">
             No projects found matching your criteria.
@@ -495,27 +500,6 @@ function ProjectList({
 
 export default ProjectList;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // import React, { useState, useEffect } from "react";
 // import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 
@@ -598,7 +582,7 @@ export default ProjectList;
 //     console.log(
 //         filteredProjects,
 //       "Filtered projects (after applying filters):",
-  
+
 //     ); // <-- HERE
 //     const matchesProjectName =
 //       filterProjectName === "" ||

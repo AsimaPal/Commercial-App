@@ -48,7 +48,7 @@ function AppHeader() {
         />
       </div>
       <h1 className="text-xl sm:text-2xl font-extrabold text-blue-800 drop-shadow-sm text-center flex-grow whitespace-nowrap overflow-hidden text-ellipsis px-4">
-        Dts Commercial Tracker
+        Project Revenue Tracker
       </h1>
       <div className="flex items-center">
         <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
