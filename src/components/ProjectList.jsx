@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import * as XLSX from 'xlsx';
 
 function ProjectList({
   db,
@@ -203,6 +204,111 @@ function ProjectList({
     );
   };
 
+  // Excel Download Function
+  const downloadExcel = () => {
+    try {
+      // Prepare data for Excel with all the columns from the table
+      const excelData = filteredProjects.map((project) => {
+        const consolidated = getConsolidatedData(project);
+        
+        return {
+          'Project Name': project.projectName,
+          'Project Code': project.projectCode,
+          'Client Name': project.clientName,
+          'Project Manager': project.projectManagerName,
+          'Delivery Manager': project.deliveryManagerName,
+          'Revenue ($)': consolidated.totalRevenue.toFixed(2),
+          'Cost ($)': consolidated.totalCost.toFixed(2),
+          'Average Resources': consolidated.averageMembers.toFixed(1),
+          'Revenue Per Employee ($)': consolidated.rpe.toFixed(2),
+          'Cost Per Employee ($)': consolidated.cpe.toFixed(2),
+          'Gross Margin (%)': consolidated.gm.toFixed(2),
+        };
+      });
+
+      // Add summary row
+      const summaryRow = {
+        'Project Name': 'OVERALL SUMMARY',
+        'Project Code': '',
+        'Client Name': '',
+        'Project Manager': '',
+        'Delivery Manager': '',
+        'Revenue ($)': overallConsolidated.totalRevenue.toFixed(2),
+        'Cost ($)': overallConsolidated.totalCost.toFixed(2),
+        'Average Resources': overallAverageResources.toFixed(1),
+        'Revenue Per Employee ($)': overallAverageRPE.toFixed(2),
+        'Cost Per Employee ($)': overallAverageCPE.toFixed(2),
+        'Gross Margin (%)': overallGrossMargin.toFixed(2),
+      };
+
+      // Add empty row for separation
+      const emptyRow = {
+        'Project Name': '',
+        'Project Code': '',
+        'Client Name': '',
+        'Project Manager': '',
+        'Delivery Manager': '',
+        'Revenue ($)': '',
+        'Cost ($)': '',
+        'Average Resources': '',
+        'Revenue Per Employee ($)': '',
+        'Cost Per Employee ($)': '',
+        'Gross Margin (%)': '',
+      };
+
+      const finalData = [...excelData, emptyRow, summaryRow];
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(finalData);
+      const wb = XLSX.utils.book_new();
+      
+      // Set column widths for better readability
+      const colWidths = [
+        { wch: 25 }, // Project Name
+        { wch: 15 }, // Project Code
+        { wch: 20 }, // Client Name
+        { wch: 20 }, // Project Manager
+        { wch: 20 }, // Delivery Manager
+        { wch: 15 }, // Revenue
+        { wch: 15 }, // Cost
+        { wch: 18 }, // Average Resources
+        { wch: 20 }, // Revenue Per Employee
+        { wch: 18 }, // Cost Per Employee
+        { wch: 18 }, // Gross Margin
+      ];
+      ws['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(wb, ws, "Projects Dashboard");
+
+      // Generate filename with current date and applied filters
+      const currentDate = new Date().toISOString().split('T')[0];
+      let filename = `Projects_Dashboard_${currentDate}`;
+      
+      // Add filter information to filename if filters are applied
+      const appliedFilters = [];
+      if (filterProjectName) appliedFilters.push(`Project_${filterProjectName.replace(/\s+/g, '_')}`);
+      if (filterClient) appliedFilters.push(`Client_${filterClient.replace(/\s+/g, '_')}`);
+      if (filterPM) appliedFilters.push(`PM_${filterPM.replace(/\s+/g, '_')}`);
+      if (filterDM) appliedFilters.push(`DM_${filterDM.replace(/\s+/g, '_')}`);
+      if (consolidatedStartMonth) appliedFilters.push(`From_${consolidatedStartMonth}`);
+      if (consolidatedEndMonth) appliedFilters.push(`To_${consolidatedEndMonth}`);
+      
+      if (appliedFilters.length > 0) {
+        filename += `_Filtered_${appliedFilters.join('_')}`;
+      }
+      
+      filename += '.xlsx';
+
+      // Download the file
+      XLSX.writeFile(wb, filename);
+      
+      console.log('Excel file downloaded successfully:', filename);
+    } catch (error) {
+      console.error('Error downloading Excel file:', error);
+      setError('Failed to download Excel file. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[300px] flex items-center justify-center bg-gray-50 rounded-xl">
@@ -282,103 +388,135 @@ function ProjectList({
         </div>
       </div>
 
-      <div className="bg-[#F8FDFE] p-5 rounded-xl shadow-sm mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 border border-[#EBF5F7]">
-        <h3 className="col-span-full text-lg font-semibold text-gray-700 mb-2 border-b pb-2 border-gray-200">
-          Filter Projects
-        </h3>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="filterProjectName"
-            className="block text-xs font-medium text-gray-700"
+      <div className="bg-[#F8FDFE] p-5 rounded-xl shadow-sm mb-8 border border-[#EBF5F7]">
+        {/* Header with title and download button */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 border-gray-200">
+            Filter Projects
+          </h3>
+          <button
+            onClick={downloadExcel}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium shadow-sm flex items-center gap-2"
+            disabled={filteredProjects.length === 0}
           >
-            Project Name
-          </label>
-          <input
-            type="text"
-            id="filterProjectName"
-            value={filterProjectName}
-            onChange={(e) => setFilterProjectName(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-            placeholder="e.g., Project Alpha"
-          />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Excel
+            {filteredProjects.length > 0 && (
+              <span className="bg-green-500 text-green-100 px-2 py-0.5 rounded-full text-xs">
+                {filteredProjects.length}
+              </span>
+            )}
+          </button>
         </div>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="filterClient"
-            className="block text-xs font-medium text-gray-700"
-          >
-            Client Name
-          </label>
-          <input
-            type="text"
-            id="filterClient"
-            value={filterClient}
-            onChange={(e) => setFilterClient(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-            placeholder="e.g., Acme Corp"
-          />
-        </div>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="filterPM"
-            className="block text-xs font-medium text-gray-700"
-          >
-            Project Manager
-          </label>
-          <input
-            type="text"
-            id="filterPM"
-            value={filterPM}
-            onChange={(e) => setFilterPM(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-            placeholder="e.g., Jane Doe"
-          />
-        </div>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="filterDM"
-            className="block text-xs font-medium text-gray-700"
-          >
-            Delivery Manager
-          </label>
-          <input
-            type="text"
-            id="filterDM"
-            value={filterDM}
-            onChange={(e) => setFilterDM(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-            placeholder="e.g., John Smith"
-          />
-        </div>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="consolidatedStartMonth"
-            className="block text-xs font-medium text-gray-700"
-          >
-            Consolidated View Start Month
-          </label>
-          <input
-            type="month"
-            id="consolidatedStartMonth"
-            value={consolidatedStartMonth}
-            onChange={(e) => setConsolidatedStartMonth(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-          />
-        </div>
-        <div className="space-y-0.5">
-          <label
-            htmlFor="consolidatedEndMonth"
-            className="block text-xs font-medium text-gray-700"
-          >
-            Consolidated View End Month
-          </label>
-          <input
-            type="month"
-            id="consolidatedEndMonth"
-            value={consolidatedEndMonth}
-            onChange={(e) => setConsolidatedEndMonth(e.target.value)}
-            className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
-          />
+
+        {/* Filter inputs grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
+          <div className="space-y-0.5">
+            <label
+              htmlFor="filterProjectName"
+              className="block text-xs font-medium text-gray-700"
+            >
+              Project Name
+            </label>
+            <input
+              type="text"
+              id="filterProjectName"
+              value={filterProjectName}
+              onChange={(e) => setFilterProjectName(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
+              placeholder="e.g., Project Alpha"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <label
+              htmlFor="filterClient"
+              className="block text-xs font-medium text-gray-700"
+            >
+              Client Name
+            </label>
+            <input
+              type="text"
+              id="filterClient"
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
+              placeholder="e.g., Acme Corp"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <label
+              htmlFor="filterPM"
+              className="block text-xs font-medium text-gray-700"
+            >
+              Project Manager
+            </label>
+            <input
+              type="text"
+              id="filterPM"
+              value={filterPM}
+              onChange={(e) => setFilterPM(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
+              placeholder="e.g., Jane Doe"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <label
+              htmlFor="filterDM"
+              className="block text-xs font-medium text-gray-700"
+            >
+              Delivery Manager
+            </label>
+            <input
+              type="text"
+              id="filterDM"
+              value={filterDM}
+              onChange={(e) => setFilterDM(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm"
+              placeholder="e.g., John Smith"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <label
+              htmlFor="consolidatedStartMonth"
+              className="block text-xs font-medium text-gray-700 flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Start Month (YYYY-MM)
+            </label>
+            <input
+              type="month"
+              id="consolidatedStartMonth"
+              value={consolidatedStartMonth}
+              onChange={(e) => setConsolidatedStartMonth(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm cursor-pointer hover:border-blue-300"
+              placeholder="YYYY-MM"
+              title="Click to open month picker calendar"
+            />
+          </div>
+          <div className="space-y-0.5">
+            <label
+              htmlFor="consolidatedEndMonth"
+              className="block text-xs font-medium text-gray-700 flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              End Month (YYYY-MM)
+            </label>
+            <input
+              type="month"
+              id="consolidatedEndMonth"
+              value={consolidatedEndMonth}
+              onChange={(e) => setConsolidatedEndMonth(e.target.value)}
+              className="w-full py-1.5 px-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 text-sm cursor-pointer hover:border-blue-300"
+              placeholder="YYYY-MM"
+              title="Click to open month picker calendar"
+            />
+          </div>
         </div>
       </div>
 
