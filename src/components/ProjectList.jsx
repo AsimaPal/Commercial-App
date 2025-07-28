@@ -120,11 +120,21 @@ function ProjectList({
       }
     });
 
+    const averageMembers = monthsCount > 0 ? totalMembers / monthsCount : 0;
+    
+    // Calculate RPE, CPE, and GM%
+    const rpe = averageMembers > 0 ? totalRevenue / averageMembers : 0;
+    const cpe = averageMembers > 0 ? totalCost / averageMembers : 0;
+    const gm = totalRevenue !== 0 ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0;
+
     return {
       totalRevenue,
       totalCost,
       totalMembers,
-      averageMembers: monthsCount > 0 ? totalMembers / monthsCount : 0,
+      averageMembers,
+      rpe,
+      cpe,
+      gm
     };
   };
 
@@ -430,6 +440,24 @@ function ProjectList({
                 </th>
                 <th
                   scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  RPE
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  CPE
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  GM%
+                </th>
+                <th
+                  scope="col"
                   className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Actions
@@ -465,6 +493,17 @@ function ProjectList({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-800 font-semibold">
                       {consolidated.averageMembers.toFixed(1)}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-indigo-600 font-semibold">
+                      ${consolidated.rpe.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-semibold">
+                      ${consolidated.cpe.toFixed(2)}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-semibold ${
+                      consolidated.gm >= 0 ? "text-green-600" : "text-red-600"
+                    }`}>
+                      {consolidated.gm.toFixed(2)}%
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
                         {/* <button
@@ -480,7 +519,7 @@ function ProjectList({
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteProject(project.id)}
+                          onClick={() => handleDeleteProject(project)}
                           className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-xs shadow-sm"
                         >
                           Delete
